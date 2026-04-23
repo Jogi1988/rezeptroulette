@@ -404,13 +404,18 @@ window.addEventListener('popstate', (e) => {
 
 function render() {
   app.innerHTML = '';
-  switch (state.currentView) {
-    case 'recipe_list': renderRecipeList(); break;
-    case 'recipe_detail': renderRecipeDetail(); break;
-    case 'add_recipe': renderAddRecipe(); break;
-    case 'edit_recipe': renderEditRecipe(); break;
-    case 'planned_meals': renderPlannedMeals(); break;
-    case 'shopping_list': renderShoppingList(); break;
+  try {
+    switch (state.currentView) {
+      case 'recipe_list': renderRecipeList(); break;
+      case 'recipe_detail': renderRecipeDetail(); break;
+      case 'add_recipe': renderAddRecipe(); break;
+      case 'edit_recipe': renderEditRecipe(); break;
+      case 'planned_meals': renderPlannedMeals(); break;
+      case 'shopping_list': renderShoppingList(); break;
+    }
+  } catch(e) {
+    console.error('Render error:', e);
+    app.append(h('div', { style: { padding: '24px', color: 'red' } }, `Fehler: ${e.message}`));
   }
 }
 
@@ -1302,7 +1307,8 @@ function renderPlannedMeals() {
   }
 
   // ── Recipe Suggestions (ingredient overlap) ──
-  const suggestionSection = buildSuggestionSection();
+  let suggestionSection;
+  try { suggestionSection = buildSuggestionSection(); } catch(e) { console.error('Suggestion error:', e); suggestionSection = h('div'); }
 
   const view = h('div', { className: 'view' }, mealsList, suggestionSection);
   app.append(topBar, view, bottomBar('planned_meals'));
