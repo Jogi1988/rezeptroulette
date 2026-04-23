@@ -1071,6 +1071,13 @@ function renderRecipeForm({ title: formTitle, recipe }) {
   function renderForm() {
     form.innerHTML = '';
 
+    // Auto-import wenn von Tampermonkey/Deeplink geöffnet
+    if (state.pendingImportUrl && !formData.sourceUrl) {
+      formData.sourceUrl = state.pendingImportUrl;
+      delete state.pendingImportUrl;
+      setTimeout(() => importRecipeFromUrl(formData, renderForm), 300);
+    }
+
     // Source URL with Import button
     const urlInput = makeInput('text', formData.sourceUrl, v => { formData.sourceUrl = v; }, 'https://www.hellofresh.de/recipes/...');
     const importBtn = h('button', {
@@ -1823,11 +1830,29 @@ async function seedSampleData() {
   await openDB();
   await seedSampleData();
   await loadData();
-  history.replaceState({ view: 'recipe_list' }, '', null);
-  render();
+
+  // Auto-import via #import=URL oder ?import=URL (z.B. von Tampermonkey-Skript)
+  let importUrl = null;
+  if (location.hash.startsWith('#import=')) {
+    importUrl = decodeURIComponent(location.hash.slice('#import='.length));
+  } else {
+    importUrl = new URLSearchParams(location.search).get('import');
+  }
+  if (importUrl) {
+    history.replaceState({ view: 'add_recipe' }, '', location.pathname);
+    state.pendingImportUrl = importUrl;
+    navigate('add_recipe');
+  } else {
+    history.replaceState({ view: 'recipe_list' }, '', null);
+    render();
+  }
+
   // Start cloud sync
   if (getSyncToken()) {
-    syncFromCloud().then(() => { render(); startSyncLoop(); });
+    syncFromCloud().then(() => {
+      if (state.currentView !== 'add_recipe') render();
+      startSyncLoop();
+    });
   }
 })();
 </script>
