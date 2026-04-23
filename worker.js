@@ -1,12 +1,14 @@
 /**
- * RezeptRoulette – Cloudflare Worker (Rezept-Import-API)
+ * RezeptRoulette – Cloudflare Worker (Rezept-Import-API + Sync)
  * 
- * Endpunkt: GET /api/fetch-recipe?url=https://www.hellofresh.de/recipes/...
+ * Endpunkte:
+ *   GET  /api/fetch-recipe?url=...   – Rezept von URL importieren
+ *   GET  /api/sync                    – Daten vom Server holen
+ *   POST /api/sync                    – Daten zum Server pushen & mergen
  * 
- * Deployment:
- *   1. https://workers.cloudflare.com → Create Worker
- *   2. Diesen Code einfügen → Save and Deploy
- *   3. Worker-URL in index.html eintragen
+ * Benötigt:
+ *   - KV Namespace Binding: RECIPES_KV
+ *   - Environment Variable: SYNC_TOKEN
  */
 
 const ALLOWED_ORIGINS = ['https://jo-gis.de', 'https://www.jo-gis.de', 'http://jo-gis.de', 'http://www.jo-gis.de', 'https://jogi1988.github.io', 'https://Jogi1988.github.io', 'http://localhost:8080', 'http://localhost:3000'];
@@ -15,21 +17,27 @@ function corsHeaders(origin) {
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
     const cors = corsHeaders(origin);
 
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: cors });
+      return new Response(null, { headers: { ...cors, 'Access-Control-Allow-Headers': 'Content-Type, Authorization' } });
     }
 
     const url = new URL(request.url);
+
+    // ── Sync endpoints ──
+    if (url.pathname === '/api/sync') {
+      return handleSync(request, env, cors);
+    }
+
     if (url.pathname !== '/api/fetch-recipe') {
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
@@ -88,6 +96,59 @@ function jsonResp(status, data, cors) {
     status,
     headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8' },
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Sync (Cloudflare KV)
+// ═══════════════════════════════════════════════════════════════
+
+function checkAuth(request, env) {
+  const token = env.SYNC_TOKEN;
+  if (!token) return false;
+  const auth = request.headers.get('Authorization') || '';
+  return auth === `Bearer ${token}`;
+}
+
+function mergeArrays(local, remote) {
+  const map = new Map();
+  for (const item of remote) map.set(String(item.id), item);
+  for (const item of local) {
+    const key = String(item.id);
+    const existing = map.get(key);
+    if (!existing || (item.modifiedAt || 0) > (existing.modifiedAt || 0)) {
+      map.set(key, item);
+    }
+  }
+  return [...map.values()];
+}
+
+async function handleSync(request, env, cors) {
+  if (!checkAuth(request, env)) {
+    return jsonResp(401, { error: 'Ungültiger Sync-Token' }, cors);
+  }
+  if (!env.RECIPES_KV) {
+    return jsonResp(500, { error: 'KV nicht konfiguriert' }, cors);
+  }
+
+  if (request.method === 'GET') {
+    const data = await env.RECIPES_KV.get('sync_data', { type: 'json' });
+    return jsonResp(200, data || { recipes: [], planned_meals: [] }, cors);
+  }
+
+  if (request.method === 'POST') {
+    const incoming = await request.json();
+    const stored = await env.RECIPES_KV.get('sync_data', { type: 'json' }) || { recipes: [], planned_meals: [] };
+
+    const merged = {
+      recipes: mergeArrays(incoming.recipes || [], stored.recipes || []),
+      planned_meals: mergeArrays(incoming.planned_meals || [], stored.planned_meals || []),
+    };
+
+    await env.RECIPES_KV.put('sync_data', JSON.stringify(merged));
+    return jsonResp(200, merged, cors);
+  }
+
+  return jsonResp(405, { error: 'Method not allowed' }, cors);
 }
 
 // ═══════════════════════════════════════════════════════════════

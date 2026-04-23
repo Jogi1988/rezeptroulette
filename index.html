@@ -274,6 +274,91 @@ function dbDelete(store, id) {
   });
 }
 
+// ── Sync ───────────────────────────────────────────────────────────────
+function getSyncToken() { return localStorage.getItem('rr_sync_token') || ''; }
+function setSyncToken(t) { localStorage.setItem('rr_sync_token', t); }
+
+async function syncToCloud() {
+  const token = getSyncToken();
+  if (!token) return;
+  try {
+    const recipes = await dbGetAll('recipes');
+    const planned_meals = await dbGetAll('planned_meals');
+    const resp = await fetch(WORKER_API + '/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ recipes, planned_meals }),
+    });
+    if (!resp.ok) { console.warn('Sync push failed:', resp.status); return; }
+    const merged = await resp.json();
+    // Write merged data back to local DB
+    const tx = db.transaction(['recipes', 'planned_meals'], 'readwrite');
+    const rs = tx.objectStore('recipes');
+    const ps = tx.objectStore('planned_meals');
+    // Clear and re-add all
+    rs.clear();
+    ps.clear();
+    for (const r of merged.recipes) rs.put(r);
+    for (const m of merged.planned_meals) ps.put(m);
+    await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); });
+    await loadData();
+    updateSyncIndicator('synced');
+  } catch(e) { console.warn('Sync error:', e); updateSyncIndicator('error'); }
+}
+
+async function syncFromCloud() {
+  const token = getSyncToken();
+  if (!token) return;
+  try {
+    const resp = await fetch(WORKER_API + '/api/sync', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!resp.ok) return;
+    const remote = await resp.json();
+    const localRecipes = await dbGetAll('recipes');
+    const localMeals = await dbGetAll('planned_meals');
+    // Merge: newer modifiedAt wins
+    const mergedR = mergeLocal(localRecipes, remote.recipes || []);
+    const mergedM = mergeLocal(localMeals, remote.planned_meals || []);
+    const tx = db.transaction(['recipes', 'planned_meals'], 'readwrite');
+    const rs = tx.objectStore('recipes');
+    const ps = tx.objectStore('planned_meals');
+    rs.clear(); ps.clear();
+    for (const r of mergedR) rs.put(r);
+    for (const m of mergedM) ps.put(m);
+    await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); });
+    await loadData();
+    updateSyncIndicator('synced');
+  } catch(e) { console.warn('Sync pull error:', e); updateSyncIndicator('error'); }
+}
+
+function mergeLocal(local, remote) {
+  const map = new Map();
+  for (const item of remote) map.set(String(item.id), item);
+  for (const item of local) {
+    const key = String(item.id);
+    const existing = map.get(key);
+    if (!existing || (item.modifiedAt || 0) > (existing.modifiedAt || 0)) {
+      map.set(key, item);
+    }
+  }
+  return [...map.values()];
+}
+
+function updateSyncIndicator(status) {
+  const el = document.getElementById('sync-dot');
+  if (!el) return;
+  el.style.background = status === 'synced' ? '#4CAF50' : status === 'error' ? '#f44336' : '#999';
+  el.title = status === 'synced' ? 'Synchronisiert' : status === 'error' ? 'Sync-Fehler' : 'Nicht verbunden';
+}
+
+let syncInterval = null;
+function startSyncLoop() {
+  if (syncInterval) clearInterval(syncInterval);
+  if (!getSyncToken()) return;
+  syncInterval = setInterval(() => syncFromCloud().then(() => render()), 60000);
+}
+
 // ── State ──────────────────────────────────────────────────────────────
 let state = {
   recipes: [],
@@ -376,8 +461,8 @@ const esc = s => typeof s === 'string' ? s : '';
 const app = document.getElementById('app');
 
 async function loadData() {
-  state.recipes = await dbGetAll('recipes');
-  state.plannedMeals = await dbGetAll('planned_meals');
+  state.recipes = (await dbGetAll('recipes')).filter(r => !r.deleted);
+  state.plannedMeals = (await dbGetAll('planned_meals')).filter(m => !m.deleted);
 }
 
 function navigate(view, params = {}, { pushHistory = true } = {}) {
@@ -421,14 +506,53 @@ function render() {
 
 // ── Bottom Bar ────────────────────────────────────────────────────────
 function bottomBar(active) {
+  const syncDot = h('span', { id: 'sync-dot', style: { display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: getSyncToken() ? '#4CAF50' : '#999', marginLeft: '4px', verticalAlign: 'middle' } });
   return h('div', { className: 'bottom-bar' },
     h('button', { className: active === 'recipe_list' ? 'active' : '', onClick: () => navigate('recipe_list') },
       h('span', { className: 'icon' }, '🏠'), 'Rezepte'),
     h('button', { className: active === 'planned_meals' ? 'active' : '', onClick: () => navigate('planned_meals') },
       h('span', { className: 'icon' }, '📅'), 'Eingeplant'),
     h('button', { className: active === 'shopping_list' ? 'active' : '', onClick: () => navigate('shopping_list') },
-      h('span', { className: 'icon' }, '🛒'), 'Einkauf')
+      h('span', { className: 'icon' }, '🛒'), 'Einkauf'),
+    h('button', { onClick: showSyncSettings },
+      h('span', { className: 'icon' }, '⚙️'), syncDot)
   );
+}
+
+function showSyncSettings() {
+  const currentToken = getSyncToken();
+  let tokenVal = currentToken;
+  const overlay = h('div', { className: 'modal-overlay', onClick: (e) => { if (e.target === overlay) overlay.remove(); } },
+    h('div', { className: 'modal' },
+      h('h3', {}, '☁️ Cloud-Sync'),
+      h('p', { style: { fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' } },
+        'Gib deinen Sync-Token ein, um Rezepte zwischen Geräten zu synchronisieren.'),
+      (() => {
+        const input = h('input', { type: 'text', className: 'form-input', placeholder: 'Sync-Token eingeben', value: tokenVal,
+          style: { width: '100%', marginBottom: '12px', padding: '10px', border: '1px solid var(--outline-variant)', borderRadius: 'var(--radius-sm)', fontSize: '14px' } });
+        input.addEventListener('input', (e) => { tokenVal = e.target.value; });
+        return input;
+      })(),
+      h('div', { className: 'modal-actions', style: { display: 'flex', gap: '8px' } },
+        h('button', { className: 'btn btn-outline btn-sm', onClick: () => overlay.remove() }, 'Abbrechen'),
+        h('button', { className: 'btn btn-primary btn-sm', onClick: async () => {
+          setSyncToken(tokenVal.trim());
+          overlay.remove();
+          if (tokenVal.trim()) {
+            await syncToCloud();
+            startSyncLoop();
+            render();
+          }
+        } }, 'Speichern & Sync'),
+        currentToken ? h('button', { className: 'btn btn-outline btn-sm', onClick: async () => {
+          await syncFromCloud();
+          overlay.remove();
+          render();
+        } }, '↓ Jetzt laden') : null
+      )
+    )
+  );
+  document.body.append(overlay);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -743,10 +867,11 @@ function showScheduleDialog(recipeId) {
           className: 'btn btn-primary btn-full',
           style: { marginBottom: '8px' },
           onClick: async () => {
-            await dbAdd('planned_meals', { recipeId, persons: p, plannedAt: Date.now() });
+            await dbAdd('planned_meals', { recipeId, persons: p, plannedAt: Date.now(), modifiedAt: Date.now() });
             await loadData();
             overlay.remove();
             render();
+            syncToCloud();
           }
         }, `${p} Personen`)
       ),
@@ -767,13 +892,17 @@ function showDeleteDialog(recipe) {
       h('div', { className: 'modal-actions' },
         h('button', { className: 'btn btn-outline btn-sm', onClick: () => overlay.remove() }, 'Abbrechen'),
         h('button', { className: 'btn btn-danger btn-sm', onClick: async () => {
-          await dbDelete('recipes', recipe.id);
-          // Also delete associated planned meals
+          // Soft-delete recipe
+          recipe.deleted = true;
+          recipe.modifiedAt = Date.now();
+          await dbPut('recipes', recipe);
+          // Soft-delete associated planned meals
           const meals = state.plannedMeals.filter(m => m.recipeId === recipe.id);
-          for (const m of meals) await dbDelete('planned_meals', m.id);
+          for (const m of meals) { m.deleted = true; m.modifiedAt = Date.now(); await dbPut('planned_meals', m); }
           await loadData();
           overlay.remove();
           navigate('recipe_list');
+          syncToCloud();
         } }, 'Löschen')
       )
     )
@@ -1056,6 +1185,7 @@ function renderRecipeForm({ title: formTitle, recipe }) {
             ingredients: JSON.stringify(formData.ingredients),
             steps: JSON.stringify(formData.steps),
             createdAt: recipe?.createdAt || Date.now(),
+            modifiedAt: Date.now(),
           };
           if (recipe) {
             data.id = recipe.id;
@@ -1066,6 +1196,7 @@ function renderRecipeForm({ title: formTitle, recipe }) {
           await loadData();
           if (recipe) navigate('recipe_detail', { detailId: recipe.id });
           else navigate('recipe_list');
+          syncToCloud();
         }
       }, recipe ? 'Rezept aktualisieren' : 'Rezept speichern')
     ));
@@ -1298,7 +1429,7 @@ function renderPlannedMeals() {
             h('button', {
               className: 'del-btn',
               style: { fontSize: '24px' },
-              onClick: async () => { await dbDelete('planned_meals', meal.id); await loadData(); render(); }
+              onClick: async () => { meal.deleted = true; meal.modifiedAt = Date.now(); await dbPut('planned_meals', meal); await loadData(); render(); syncToCloud(); }
             }, '🗑')
           )
         );
@@ -1614,7 +1745,8 @@ async function seedSampleData() {
       { number: 4, title: 'Köcheln lassen', body: 'Kokosmilch und Sahne angießen, gut verrühren. Bei mittlerer Hitze ca. 8-10 Minuten köcheln lassen, bis die Sauce leicht eindickt.' },
       { number: 5, title: 'Anrichten', body: 'Reis auf Teller verteilen, Butter-Chicken darauf anrichten. Mit frischem Koriander garnieren. Guten Appetit!' }
     ]),
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    modifiedAt: Date.now()
   });
 
   await dbAdd('recipes', {
@@ -1644,7 +1776,8 @@ async function seedSampleData() {
       { number: 3, title: 'Dressing', body: 'Olivenöl, Zitronensaft, Oregano, Salz und Pfeffer zu einem Dressing verrühren.' },
       { number: 4, title: 'Vermengen & Servieren', body: 'Orzo, geschnittenes Gemüse und Dressing in einer großen Schüssel vermengen. Feta darüber bröseln. Sofort servieren oder kalt stellen.' }
     ]),
-    createdAt: Date.now() - 86400000
+    createdAt: Date.now() - 86400000,
+    modifiedAt: Date.now() - 86400000
   });
 
   await dbAdd('recipes', {
@@ -1675,7 +1808,8 @@ async function seedSampleData() {
       { number: 3, title: 'Fisch braten', body: 'Seelachsfilet mit Salz und Pfeffer würzen, leicht in Mehl wenden. Butter in einer Pfanne erhitzen und den Fisch von jeder Seite ca. 3-4 Minuten goldbraun braten.' },
       { number: 4, title: 'Anrichten', body: 'Fisch mit Kartoffelsalat und einer Zitronenspalte servieren. Mit frischem Dill garnieren.' }
     ]),
-    createdAt: Date.now() - 172800000
+    createdAt: Date.now() - 172800000,
+    modifiedAt: Date.now() - 172800000
   });
 }
 
@@ -1688,6 +1822,10 @@ async function seedSampleData() {
   await loadData();
   history.replaceState({ view: 'recipe_list' }, '', null);
   render();
+  // Start cloud sync
+  if (getSyncToken()) {
+    syncFromCloud().then(() => { render(); startSyncLoop(); });
+  }
 })();
 </script>
 </body>
