@@ -338,9 +338,12 @@ function mergeLocal(local, remote) {
   for (const item of local) {
     const key = String(item.id);
     const existing = map.get(key);
-    if (!existing || (item.modifiedAt || 0) > (existing.modifiedAt || 0)) {
-      map.set(key, item);
-    }
+    if (!existing) { map.set(key, item); continue; }
+    // Non-deleted always wins over deleted (sync never deletes)
+    if (item.deleted && !existing.deleted) continue;
+    if (!item.deleted && existing.deleted) { map.set(key, item); continue; }
+    // Both same state → newer wins
+    if ((item.modifiedAt || 0) > (existing.modifiedAt || 0)) map.set(key, item);
   }
   return [...map.values()];
 }
@@ -1067,18 +1070,6 @@ function renderRecipeForm({ title: formTitle, recipe }) {
 
   function renderForm() {
     form.innerHTML = '';
-
-    // Auto-import wenn von Tampermonkey/Deeplink geöffnet
-    if (state.pendingImportUrl && !formData.sourceUrl) {
-      const pendingUrl = state.pendingImportUrl;
-      formData.sourceUrl = pendingUrl;
-      delete state.pendingImportUrl;
-      console.log('[RezeptRoulette] Auto-import starting for:', pendingUrl);
-      setTimeout(() => {
-        console.log('[RezeptRoulette] Calling importRecipeFromUrl...');
-        importRecipeFromUrl(formData, renderForm);
-      }, 300);
-    }
 
     // Source URL with Import button
     const urlInput = makeInput('text', formData.sourceUrl, v => { formData.sourceUrl = v; }, 'https://www.hellofresh.de/recipes/...');
@@ -1832,32 +1823,11 @@ async function seedSampleData() {
   await openDB();
   await seedSampleData();
   await loadData();
-
-  // Auto-import via #import=URL oder ?import=URL (z.B. von Tampermonkey-Skript)
-  let importUrl = null;
-  if (location.hash.startsWith('#import=')) {
-    importUrl = decodeURIComponent(location.hash.slice('#import='.length));
-  } else {
-    importUrl = new URLSearchParams(location.search).get('import');
-  }
-  console.log('[RezeptRoulette] Init, importUrl:', importUrl);
-  if (importUrl) {
-    history.replaceState({ view: 'add_recipe' }, '', location.pathname);
-    state.pendingImportUrl = importUrl;
-    console.log('[RezeptRoulette] Navigating to add_recipe with import:', importUrl);
-    navigate('add_recipe');
-  } else {
-    history.replaceState({ view: 'recipe_list' }, '', null);
-    render();
-  }
-
+  history.replaceState({ view: 'recipe_list' }, '', null);
+  render();
   // Start cloud sync
   if (getSyncToken()) {
-    syncFromCloud().then(() => {
-      // Kein render() wenn gerade ein Import läuft (Formular würde zurückgesetzt)
-      if (state.currentView !== 'add_recipe') render();
-      startSyncLoop();
-    });
+    syncFromCloud().then(() => { render(); startSyncLoop(); });
   }
 })();
 </script>

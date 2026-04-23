@@ -115,9 +115,12 @@ function mergeArrays(local, remote) {
   for (const item of local) {
     const key = String(item.id);
     const existing = map.get(key);
-    if (!existing || (item.modifiedAt || 0) > (existing.modifiedAt || 0)) {
-      map.set(key, item);
-    }
+    if (!existing) { map.set(key, item); continue; }
+    // Non-deleted always wins over deleted (sync never deletes)
+    if (item.deleted && !existing.deleted) continue;
+    if (!item.deleted && existing.deleted) { map.set(key, item); continue; }
+    // Both same state → newer wins
+    if ((item.modifiedAt || 0) > (existing.modifiedAt || 0)) map.set(key, item);
   }
   return [...map.values()];
 }
@@ -320,8 +323,15 @@ function isoDurationToText(iso) {
 }
 
 function cleanMarkdown(text) {
-  return text.replace(/\*\*([^*]*)\*\*/g, '$1').replace(/\*([^*]*)\*/g, '$1')
-    .replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+  return text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\*\*([^*]*)\*\*/g, '$1')
+    .replace(/\*([^*]*)\*/g, '$1')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function parseIngredientText(text) {
