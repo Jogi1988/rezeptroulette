@@ -1089,6 +1089,13 @@ function makeInput(type, value, onChange, placeholder) {
 }
 
 // ── Recipe URL import ────────────────────────────────────────────────
+// API-Endpunkt: Cloudflare Worker online, lokaler Server als Fallback
+const WORKER_API = 'https://rezeptroulette-api.jogi1988.workers.dev';
+function getApiBase() {
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return '';
+  return WORKER_API;
+}
+
 async function importRecipeFromUrl(formData, renderForm) {
   const url = (formData.sourceUrl || '').trim();
   if (!url) return;
@@ -1101,7 +1108,7 @@ async function importRecipeFromUrl(formData, renderForm) {
   showImportStatus('⏳ Rezept wird geladen und analysiert…', false);
 
   try {
-    const apiUrl = '/api/fetch-recipe?url=' + encodeURIComponent(url);
+    const apiUrl = getApiBase() + '/api/fetch-recipe?url=' + encodeURIComponent(url);
     const resp = await fetch(apiUrl);
     const data = await resp.json();
 
