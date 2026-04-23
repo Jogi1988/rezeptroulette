@@ -9,7 +9,7 @@
  *   3. Worker-URL in index.html eintragen
  */
 
-const ALLOWED_ORIGINS = ['https://jo-gis.de', 'https://www.jo-gis.de', 'https://jogi1988.github.io', 'https://Jogi1988.github.io', 'http://localhost:8080', 'http://localhost:3000'];
+const ALLOWED_ORIGINS = ['https://jo-gis.de', 'https://www.jo-gis.de', 'http://jo-gis.de', 'http://www.jo-gis.de', 'https://jogi1988.github.io', 'https://Jogi1988.github.io', 'http://localhost:8080', 'http://localhost:3000'];
 
 function corsHeaders(origin) {
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
