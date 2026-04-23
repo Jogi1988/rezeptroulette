@@ -1321,7 +1321,7 @@ function getPlannedIngredientNames() {
 function scoreSuggestions() {
   const plannedIds = new Set(state.plannedMeals.map(m => m.recipeId));
   const plannedIngs = getPlannedIngredientNames();
-  if (plannedIngs.size === 0) return state.recipes.filter(r => !plannedIds.has(r.id));
+  if (plannedIngs.size === 0) return state.recipes.filter(r => !plannedIds.has(r.id)).map(recipe => ({ recipe, overlap: [], score: 0 }));
 
   const candidates = state.recipes.filter(r => !plannedIds.has(r.id));
   return candidates.map(recipe => {
