@@ -380,15 +380,27 @@ async function loadData() {
   state.plannedMeals = await dbGetAll('planned_meals');
 }
 
-function navigate(view, params = {}) {
+function navigate(view, params = {}, { pushHistory = true } = {}) {
   state.currentView = view;
   state.cookingMode = false;
   state.cookingPhase = 0;
   state.checkedIngredients = {};
   state.cookingPersonTab = 0;
   Object.assign(state, params);
+  if (pushHistory) {
+    const histState = { view, detailId: state.detailId || null, editId: state.editId || null };
+    history.pushState(histState, '', null);
+  }
   render();
 }
+
+window.addEventListener('popstate', (e) => {
+  if (e.state && e.state.view) {
+    navigate(e.state.view, { detailId: e.state.detailId, editId: e.state.editId }, { pushHistory: false });
+  } else {
+    navigate('recipe_list', {}, { pushHistory: false });
+  }
+});
 
 function render() {
   app.innerHTML = '';
@@ -1668,6 +1680,7 @@ async function seedSampleData() {
   await openDB();
   await seedSampleData();
   await loadData();
+  history.replaceState({ view: 'recipe_list' }, '', null);
   render();
 })();
 </script>
