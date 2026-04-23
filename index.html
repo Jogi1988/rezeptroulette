@@ -25,7 +25,7 @@ html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,'Seg
 .top-bar.cooking{background:var(--tertiary)}
 .top-bar h1{font-size:18px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-bar button{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px;display:flex;align-items:center}
-.view{flex:1 1 0%;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;padding-bottom:var(--bottom-bar-h)}
+.view{flex:1 1 0%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;min-height:0;padding-bottom:var(--bottom-bar-h);touch-action:pan-y}
 .bottom-bar{position:absolute;bottom:0;left:0;right:0;height:var(--bottom-bar-h);background:var(--surface);border-top:1px solid var(--outline-variant);display:flex;z-index:10}
 .bottom-bar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;font-size:11px;color:var(--text-secondary);cursor:pointer;padding:6px 0}
 .bottom-bar button.active{color:var(--accent);font-weight:600}
@@ -647,7 +647,7 @@ function renderRecipeDetail() {
 
   // Photo
   if (recipe.photo1Uri) {
-    inner.append(h('img', { src: recipe.photo1Uri, style: { width: '100%', height: '280px', objectFit: 'cover', borderRadius: 'var(--radius)', marginBottom: '16px' } }));
+    inner.append(h('img', { src: recipe.photo1Uri, style: { width: '100%', height: '280px', objectFit: 'cover', borderRadius: 'var(--radius)', marginBottom: '16px', flexShrink: '0', display: 'block' } }));
   }
 
   // Ingredients
