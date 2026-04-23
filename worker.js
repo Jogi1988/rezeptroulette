@@ -115,12 +115,9 @@ function mergeArrays(local, remote) {
   for (const item of local) {
     const key = String(item.id);
     const existing = map.get(key);
-    if (!existing) { map.set(key, item); continue; }
-    // Non-deleted always wins over deleted (sync never deletes)
-    if (item.deleted && !existing.deleted) continue;
-    if (!item.deleted && existing.deleted) { map.set(key, item); continue; }
-    // Both same state → newer wins
-    if ((item.modifiedAt || 0) > (existing.modifiedAt || 0)) map.set(key, item);
+    if (!existing || (item.modifiedAt || 0) > (existing.modifiedAt || 0)) {
+      map.set(key, item);
+    }
   }
   return [...map.values()];
 }
