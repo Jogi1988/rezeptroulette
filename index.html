@@ -1853,7 +1853,11 @@ async function seedSampleData() {
 
   // Start cloud sync
   if (getSyncToken()) {
-    syncFromCloud().then(() => { render(); startSyncLoop(); });
+    syncFromCloud().then(() => {
+      // Kein render() wenn gerade ein Import läuft (Formular würde zurückgesetzt)
+      if (state.currentView !== 'add_recipe') render();
+      startSyncLoop();
+    });
   }
 })();
 </script>
