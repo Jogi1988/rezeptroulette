@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="RezeptRoulette">
+<meta name="theme-color" content="#067A46">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>RezeptRoulette 🍽️</title>
 <style>
 /* ── CSS Reset & Variables ────────────────────────────────────────── */
@@ -376,8 +384,10 @@ let state = {
   cookingPhase: 0,
   checkedIngredients: {},
   cookingPersonTab: 0,
-  boughtItems: new Set(),
+  boughtItems: new Set(JSON.parse(localStorage.getItem('rr_bought') || '[]')),
 };
+
+function saveBought() { localStorage.setItem('rr_bought', JSON.stringify([...state.boughtItems])); }
 
 // ── Data helpers ───────────────────────────────────────────────────────
 function tagList(recipe) {
@@ -1713,6 +1723,7 @@ function shopRow(item, bought) {
       onClick: () => {
         if (bought) state.boughtItems.delete(item.name);
         else state.boughtItems.add(item.name);
+        saveBought();
         render();
       }
     }, bought ? '✓' : ''),
