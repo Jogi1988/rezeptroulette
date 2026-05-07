@@ -1,69 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-  <!-- Logo RezeptRoulette – Grünton #067A46 mit Variationen, nur Kreis -->
+  <!-- Logo RezeptRoulette – verspielt, Emoji-Style -->
   <defs>
     <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#4CAF7D"/>
       <stop offset="100%" style="stop-color:#045A33"/>
     </linearGradient>
-    <linearGradient id="darkbg" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#045A33"/>
-      <stop offset="100%" style="stop-color:#023320"/>
-    </linearGradient>
     <filter id="shadow1">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.2"/>
-    </filter>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.25"/>
     </filter>
   </defs>
   
-  <!-- Äußerer Tellerrand – elegant mit doppelter Linie -->
-  <circle cx="200" cy="200" r="180" fill="#F4FAF6"/>
-  <circle cx="200" cy="200" r="175" fill="none" stroke="#067A46" stroke-width="5"/>
-  <circle cx="200" cy="200" r="168" fill="none" stroke="url(#green)" stroke-width="1.5"/>
-  <circle cx="200" cy="200" r="162" fill="none" stroke="#D4E8DC" stroke-width="0.8"/>
+  <!-- Hauptkreis – kräftiger Rand, verspielt -->
+  <circle cx="200" cy="200" r="190" fill="#E8F8EE"/>
+  <circle cx="200" cy="200" r="185" fill="none" stroke="#067A46" stroke-width="10"/>
   
-  <!-- Roulette-Segmente – Grüntöne im Wechsel -->
-  <path d="M200,200 L200,38 A162,162 0 0,1 339,108 Z" fill="#067A46" opacity="0.85"/>
-  <path d="M200,200 L339,108 A162,162 0 0,1 362,200 Z" fill="#4CAF7D" opacity="0.55"/>
-  <path d="M200,200 L362,200 A162,162 0 0,1 339,292 Z" fill="#067A46" opacity="0.85"/>
-  <path d="M200,200 L339,292 A162,162 0 0,1 200,362 Z" fill="#4CAF7D" opacity="0.55"/>
-  <path d="M200,200 L200,362 A162,162 0 0,1 61,292 Z" fill="#067A46" opacity="0.85"/>
-  <path d="M200,200 L61,292 A162,162 0 0,1 38,200 Z" fill="#4CAF7D" opacity="0.55"/>
-  <path d="M200,200 L38,200 A162,162 0 0,1 61,108 Z" fill="#067A46" opacity="0.85"/>
-  <path d="M200,200 L61,108 A162,162 0 0,1 200,38 Z" fill="#4CAF7D" opacity="0.55"/>
+  <!-- Roulette-Segmente – kräftige Grüntöne, deutliche Trennung -->
+  <path d="M200,200 L200,30 A170,170 0 0,1 347,100 Z" fill="#067A46"/>
+  <path d="M200,200 L347,100 A170,170 0 0,1 370,200 Z" fill="#4CAF7D"/>
+  <path d="M200,200 L370,200 A170,170 0 0,1 347,300 Z" fill="#067A46"/>
+  <path d="M200,200 L347,300 A170,170 0 0,1 200,370 Z" fill="#4CAF7D"/>
+  <path d="M200,200 L200,370 A170,170 0 0,1 53,300 Z" fill="#067A46"/>
+  <path d="M200,200 L53,300 A170,170 0 0,1 30,200 Z" fill="#4CAF7D"/>
+  <path d="M200,200 L30,200 A170,170 0 0,1 53,100 Z" fill="#067A46"/>
+  <path d="M200,200 L53,100 A170,170 0 0,1 200,30 Z" fill="#4CAF7D"/>
   
-  <!-- Feine Trennlinien zwischen Segmenten -->
-  <line x1="200" y1="200" x2="200" y2="38" stroke="#F4FAF6" stroke-width="0.8"/>
-  <line x1="200" y1="200" x2="339" y2="108" stroke="#F4FAF6" stroke-width="0.8"/>
-  <line x1="200" y1="200" x2="362" y2="200" stroke="#F4FAF6" stroke-width="0.8"/>
-  <line x1="200" y1="200" x2="339" y2="292" stroke="#F4FAF6" stroke-width="0.8"/>
-  <line x1="200" y1="200" x2="200" y2="362" stroke="#F4FAF6" stroke-width="0.8"/>
-  <line x1="200" y1="200" x2="61" y2="292" stroke="#F4FAF6" stroke-width="0.8"/>
-  <line x1="200" y1="200" x2="38" y2="200" stroke="#F4FAF6" stroke-width="0.8"/>
-  <line x1="200" y1="200" x2="61" y2="108" stroke="#F4FAF6" stroke-width="0.8"/>
+  <!-- Dicke weiße Trennlinien (verspielt) -->
+  <line x1="200" y1="200" x2="200" y2="30" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="200" x2="347" y2="100" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="200" x2="370" y2="200" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="200" x2="347" y2="300" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="200" x2="200" y2="370" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="200" x2="53" y2="300" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="200" x2="30" y2="200" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="200" x2="53" y2="100" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
   
   <!-- Food-Icons (groß, Segmente ausfüllend) -->
-  <text x="255" y="108" font-size="48" text-anchor="middle" opacity="0.9">🍝</text>
-  <text x="320" y="190" font-size="48" text-anchor="middle" opacity="0.9">🥗</text>
-  <text x="300" y="260" font-size="48" text-anchor="middle" opacity="0.9">🍲</text>
-  <text x="238" y="340" font-size="48" text-anchor="middle" opacity="0.9">🍕</text>
-  <text x="162" y="340" font-size="48" text-anchor="middle" opacity="0.9">🥩</text>
-  <text x="100" y="260" font-size="48" text-anchor="middle" opacity="0.9">🐟</text>
-  <text x="82" y="190" font-size="48" text-anchor="middle" opacity="0.9">🥘</text>
-  <text x="148" y="108" font-size="48" text-anchor="middle" opacity="0.9">🍜</text>
+  <text x="255" y="105" font-size="48" text-anchor="middle">🍝</text>
+  <text x="325" y="192" font-size="48" text-anchor="middle">🥗</text>
+  <text x="305" y="268" font-size="48" text-anchor="middle">🍲</text>
+  <text x="240" y="338" font-size="48" text-anchor="middle">🍕</text>
+  <text x="160" y="338" font-size="48" text-anchor="middle">🥩</text>
+  <text x="98" y="268" font-size="48" text-anchor="middle">🐟</text>
+  <text x="78" y="192" font-size="48" text-anchor="middle">🥘</text>
+  <text x="148" y="105" font-size="48" text-anchor="middle">🍜</text>
   
-  <!-- Mittelpunkt – elegant mit Grün-Ring -->
-  <circle cx="200" cy="200" r="34" fill="url(#darkbg)" filter="url(#shadow1)"/>
-  <circle cx="200" cy="200" r="26" fill="#F4FAF6"/>
-  <circle cx="200" cy="200" r="24" fill="none" stroke="url(#green)" stroke-width="1.5"/>
-  <text x="200" y="207" font-family="'Georgia', 'Times New Roman', serif" font-size="15" font-weight="bold" text-anchor="middle" fill="#045A33" letter-spacing="1">RR</text>
+  <!-- Mittelpunkt – rund, kräftig, verspielt -->
+  <circle cx="200" cy="200" r="40" fill="#067A46" filter="url(#shadow1)"/>
+  <circle cx="200" cy="200" r="32" fill="#FFFFFF"/>
+  <circle cx="200" cy="200" r="28" fill="none" stroke="#4CAF7D" stroke-width="4"/>
+  <text x="200" y="210" font-family="'Arial Rounded MT Bold', 'Nunito', sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#067A46">RR</text>
   
-  <!-- Zeiger oben -->
-  <polygon points="200,18 193,33 207,33" fill="url(#green)" filter="url(#glow)"/>
+  <!-- Zeiger oben – groß und rund -->
+  <polygon points="200,6 190,28 210,28" fill="#045A33" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"/>
   
-  <!-- Äußerer Clip-Kreis (saubere Kante) -->
-  <circle cx="200" cy="200" r="180" fill="none" stroke="#067A46" stroke-width="0.5" opacity="0.3"/>
+  <!-- Äußerer Rand-Highlight -->
+  <circle cx="200" cy="200" r="190" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.3"/>
 </svg>
