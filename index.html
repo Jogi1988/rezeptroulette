@@ -1432,7 +1432,7 @@ function renderPlannedMeals() {
     mealsList = h('div', { className: 'px', style: { paddingTop: '12px' } },
       ...state.plannedMeals.map(meal => {
         const recipe = state.recipes.find(r => r.id === meal.recipeId);
-        return h('div', { className: 'card', style: { cursor: 'pointer' }, onClick: () => { if (recipe) navigate('recipe_detail', true, recipe.id); } },
+        return h('div', { className: 'card', style: { cursor: 'pointer' }, onClick: () => { if (recipe) navigate('recipe_detail', { detailId: recipe.id }); } },
           h('div', { className: 'card-body', style: { display: 'flex', alignItems: 'center' } },
             h('div', { style: { flex: 1 } },
               h('div', { className: 'card-title' }, recipe?.title || 'Unbekanntes Rezept'),
