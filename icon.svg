@@ -48,10 +48,10 @@
   <!-- Food-Icons (groß, Segmente ausfüllend) -->
   <text x="255" y="108" font-size="48" text-anchor="middle" opacity="0.9">🍝</text>
   <text x="320" y="190" font-size="48" text-anchor="middle" opacity="0.9">🥗</text>
-  <text x="300" y="275" font-size="48" text-anchor="middle" opacity="0.9">🍲</text>
+  <text x="300" y="260" font-size="48" text-anchor="middle" opacity="0.9">🍲</text>
   <text x="238" y="340" font-size="48" text-anchor="middle" opacity="0.9">🍕</text>
   <text x="162" y="340" font-size="48" text-anchor="middle" opacity="0.9">🥩</text>
-  <text x="100" y="275" font-size="48" text-anchor="middle" opacity="0.9">🐟</text>
+  <text x="100" y="260" font-size="48" text-anchor="middle" opacity="0.9">🐟</text>
   <text x="82" y="190" font-size="48" text-anchor="middle" opacity="0.9">🥘</text>
   <text x="148" y="108" font-size="48" text-anchor="middle" opacity="0.9">🍜</text>
   
